@@ -1,0 +1,23 @@
+name: pypath_env
+channels:
+  - potassco
+  - colomoto
+  - bioconda
+  - conda-forge
+  - defaults
+  - r
+dependencies:
+  - jupyter
+  - networkx
+  - pip
+  - cairo
+  - matplotlib
+  - pandas
+  - pycairo
+  - pycurl
+  - python-igraph
+  - pip:
+    - omnipath
+    - pypath-omnipath
+    
+

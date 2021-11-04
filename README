@@ -1,0 +1,40 @@
+README
+
+create the conda environment with pypath:
+
+$ conda env create -f pypath_env.yml
+
+activate the environment
+
+$ conda activate pypath_env
+
+IF this is not working:
+
+create an empty conda environment:
+
+$ conda create --name pypath_env
+
+update the environment with the new packages:
+
+$ conda env update --file pypath_env.yml 
+
+
+good to go!
+
+UPDATING THE DATABASE:
+
+in case you want to update the databases, delete (or even better, do a backup and then move away)
+the folder 'tmpcache2' and 'tmpcache3'; then go to the terminal and just execute 
+
+./download_database.py
+
+this will create in your current folder two new folders (tmpcache2 and 3) with inside the cache files used to build the databases. It will take an eternety, probably, so just be patient...
+Also, once downloaded the databases, it will create two new pickle files so you can load them in the jupyter notebook and start working.
+
+There is no need to update the databases every time, if you really want to do it, you can do it the first time you use the package and maybe after a coule of months...
+
+If you want more infos about pypath, please check the following websites:
+
+https://workflows.omnipathdb.org/pypath_guide.html
+
+https://github.com/saezlab/pypath
