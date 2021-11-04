@@ -105,6 +105,20 @@ def get_complete_dict(graph, gene_dict, depth, pw_legacy):
                 #print('\n')  
     return complete_dict
 
+def filter_by_node_degree(graph, degree, pw_legacy):
+    filtered_dict = {}
+    label_tmp = [node if d > degree else '\n' for node, d in zip(graph.vs['label'], graph.degree())]
+    labels = [label for label in label_tmp if label != '\n']
+    for node in labels:
+        filtered_dict[node] = list(mapping.map_name(node, 'genesymbol', 'uniprot'))[0]
+    subg = pw_legacy.graph.induced_subgraph([pw_legacy.vs.find(name = filtered_dict[e]) for e in filtered_dict.keys()])
+    graph_obj = igraph.plot(subg, target='network_degree_filtered.pdf',
+                layout=subg.layout_auto(),
+                vertex_size=subg.degree(), edge_width=0.3, edge_color='purple',
+                vertex_color='#97BE73', vertex_frame_width=0,
+                vertex_label_size=7,
+                vertex_label_color='red', inline=True, margin=20)
+    return graph_obj
 
 def print_graph(df):  # print a network starting from the pandas dataframe and NOT froma  graph/subgraph
 
