@@ -83,29 +83,26 @@ def show_edge_dataframe(graph, gene_dict):
     return df
 
 
-def get_complete_dict(graph, dict_gene, depth):
+def get_complete_dict(graph, gene_dict, depth, pw_legacy):
     complete_dict = gene_dict.copy()
     for node1, node2 in itertools.combinations(graph.vs, 2):
-        # print(graph.are_connected(gene_dict[node1['label']], gene_dict[node2['label']]))
-        # path = graph.get_all_shortest_paths(gene_dict[node1['label']], gene_dict[node2['label']])
-        # print(node1['label'], node2['label'])
-        dist = graph.shortest_paths(dict_gene[node1['label']], dict_gene[node2['label']], mode='all')
-        # print(path)
+        #print(graph.are_connected(gene_dict[node1['label']], gene_dict[node2['label']]))
+        #path = graph.get_all_shortest_paths(gene_dict[node1['label']], gene_dict[node2['label']])
+        dist = graph.shortest_paths(gene_dict[node1['label']], gene_dict[node2['label']], mode='all')
+        #print(path)
         if dist[0][0] > depth:
             node_1 = pw_legacy.vs.find(label=node1['label'])
             node_2 = pw_legacy.vs.find(label=node2['label'])
-            for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL',
-                                                  maxlen=depth):  # do not use graph index, for each graph the indexes are different
-                # print(paths)
-                for i in range(1, len(paths) - 1):
+            for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL', maxlen=depth): #do not use graph index, for each graph the indexes are different
+                #print(paths)
+                for i in range(1, len(paths)-1):
                     if pw_legacy.vs[paths[i]]['label'] in complete_dict.keys():
                         break
                     else:
-                        # print(pw_legacy.vs[paths[i]]['label'], end=' ')
-                        complete_dict[pw_legacy.vs[paths[i]]['label']] = \
-                        list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
-
-                # print('\n')
+                        #print(pw_legacy.vs[paths[i]]['label'], end=' ')
+                        complete_dict[pw_legacy.vs[paths[i]]['label']] = list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
+                    
+                #print('\n')  
     return complete_dict
 
 
