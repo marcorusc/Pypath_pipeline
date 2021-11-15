@@ -82,6 +82,32 @@ def show_edge_dataframe(graph, gene_dict):
     df_vert.set_index('name', inplace=True)  # Optional
     return df
 
+#the following function is similar to complete_dict, but I am adding the interactions JUST for the node that are NOT already connected
+def complete_connection(graph, gene_dict, depth, pw_legacy):
+    new_dict = gene_dict.copy()
+    for node in graph.vs:
+        if node.degree() == 0: #select the node with degree == 0
+            for node2 in graph.vs:
+                if node2 == node: #loop again for all the other nodes but exclude the node already selected
+                    continue
+                else:
+                    dist = graph.shortest_paths(gene_dict[node['label']], gene_dict[node2['label']], mode='all')
+                    if dist[0][0] > depth:
+                        node_1 = pw_legacy.vs.find(label=node['label'])
+                        node_2 = pw_legacy.vs.find(label=node2['label'])
+                        for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL',
+                                                              maxlen=depth):  # do not use graph index, for each graph the indexes are different
+                            # print(paths)
+                            for i in range(1, len(paths) - 1):
+                                if pw_legacy.vs[paths[i]]['label'] in new_dict.keys():
+                                    break
+                                else:
+                                    # print(pw_legacy.vs[paths[i]]['label'], end=' ')
+                                    new_dict[pw_legacy.vs[paths[i]]['label']] = \
+                                    list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
+
+                            # print('\n')
+    return new_dict
 
 def get_complete_dict(graph, gene_dict, depth, pw_legacy):
     complete_dict = gene_dict.copy()
