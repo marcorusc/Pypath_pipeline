@@ -9,10 +9,20 @@ import igraph
 from IPython.display import Image
 import itertools
 
-def get_code_from_mapping(gene_list):
+def generate_dict(gene_list, pw_legacy):
     gene_dict = {}
     for gene in gene_list:
-        gene_dict[gene] = list(mapping.map_name(gene, 'genesymbol', 'uniprot'))[0]
+        name1= list(mapping.map_name(gene, 'genesymbol', 'uniprot'))[0]
+        name2 = list(mapping.map_name(name1, 'uniprot', 'genesymbol'))[0]
+        if len(name1) != 0:
+            try:
+                pw_legacy.vs.find(name=name1)
+                gene_dict[name1] = name2
+            except:
+                print(name1, " not present in the databases")
+        else:
+            print("Can't find genesymbol: ", name1, " try to look on genecards for other names")
+
     return gene_dict
 
 
