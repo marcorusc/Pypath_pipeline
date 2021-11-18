@@ -17,7 +17,7 @@ def generate_dict(gene_list, pw_legacy):
         if len(name1) != 0:
             try:
                 pw_legacy.vs.find(name=name1)
-                gene_dict[name1] = name2
+                gene_dict[name2] = name1
             except:
                 print(name1, " not present in the databases")
         else:
