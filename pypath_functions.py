@@ -232,3 +232,43 @@ def plot_with_colored_edges(graph): #need to add a legend
     Image(filename='network_with_colored_edges.png')
     return plot
 
+def write_bnet_from_signor(graph, gene_dict):
+    database = 'SIGNOR'  # ==> insert name of the database
+    edge_df = show_edge_dataframe(graph, gene_dict)
+    df_signor = edge_df[pd.DataFrame(edge_df.sources.tolist()).isin([database]).any(1).values] # I have filtered the dictionary to have directed interaction from signor
+    node_list = []
+    for element in df_signor["attrs"]:
+        if element.consensus_edges() != []:
+            node_list.append(element.consensus_edges()[0][0].label) #I am storing into a list the labels (genesymbol) of the genes in "sources", I will use it later
+            node_list.append(element.consensus_edges()[0][1].label) #I am storing into a list the labels (genesymbol) of the genes in "target", I will use it later
+    node_list = list(dict.fromkeys(node_list)) # now I have collected in a list all the genes that I have found with directed interactions and without duplicates
+    #print(node_list)
+    with open("formulae_Signor", "w") as f:
+        f.write("# model in BoolNet format\n")
+        f.write("# the header targets, factors is mandatory to be importable in the R package BoolNet\n")
+        f.write("\n")
+        f.write("targets, factors\n") # this is the standard label that I found in the biolqm github, is it ok? lo scopriremo solo vivendo
+        for node in node_list:
+            formula = []
+            for element in df_signor["attrs"]:
+                if element.consensus_edges() != []:  # I don't know why, but some interactions are empty... so I am using this to skip the empty interactions
+                    if element.consensus_edges()[0][1].label == node: # that's tricky one... when you write a bnet file (gene, formula) the gene is not the source, but the target! so I have to iterate between the targets
+                        #print(element.consensus_edges()[0][1].label, "  ", node ) # used to check
+                        edge = element.consensus_edges() # storing the infos
+                        if edge[0][2] == "directed" and edge[0][3] == "positive": # checking if the interaction is positive
+                            source = edge[0][0].label # if it is, store the source of the positive interaction
+                            formula.append(source) # append the gene into the list
+                        elif edge[0][2] == "directed" and edge[0][3] == "negative": # checking if the interaction is negative
+                            source = edge[0][0].label # storing
+                            formula.append("!"+source) # append it to the formula with "!"
+                        else:
+                            print("undirected interaction") # this should never happen, ma non si sa mai...
+            #print(formula)
+            if formula != []: # also this should never happen, but again, better be sure
+                f.write(node + ",")
+                offset = 16 - len(node) # nice offset so the visualization is understandable
+                f.write(" " * offset)
+                f.write(" | ".join(formula)) # writinf everything in the file
+                f.write("\n")
+    f.close # good to go
+    return
