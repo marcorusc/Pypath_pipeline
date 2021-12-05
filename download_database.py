@@ -5,8 +5,8 @@ from pypath.share import settings
 settings.setup(progressbars = True)
 
 #setting the cache directory
-os.makedirs('tmpcache2')
-settings.setup(cachedir = 'tmpcache2') # ==> to use when network.Network will be fuly implemented
+os.makedirs('tmpcache_network')
+settings.setup(cachedir = 'tmpcache_network') # ==> to use when network.Network will be fuly implemented
 
 
 #importing legacy, which is the 'old' version of pypath, the only one (for now), with the graph object implemented
@@ -41,8 +41,8 @@ print('END OF THE DOWNLOAD/UPDATE OF THE NETWORK/n')
 
 
 
-os.makedirs('tmpcache3')
-settings.setup(cachedir = 'tmpcache3') # ==> actual cache folder to use with legacy.main
+os.makedirs('tmpcache_legacy')
+settings.setup(cachedir = 'tmpcache_legacy') # ==> actual cache folder to use with legacy.main
 
 #initialization of the 'old' PyPath object
 pw_legacy = legacy.PyPath()
@@ -53,6 +53,7 @@ pw_legacy = legacy.PyPath()
 
 #instead of loading the databases using steps, I prefer loading the activity flow networks with literature references
 #(you can look at the possible datasets at: https://workflows.omnipathdb.org/pypath_guide.html#network-resources)
+
 for database in legacy.data_formats.omnipath.keys():
     try:
         print(database, " : ", legacy.data_formats.omnipath[database])
@@ -61,11 +62,28 @@ for database in legacy.data_formats.omnipath.keys():
     except Exception as inst:
         print("Error for "+database)
 
+for database in legacy.data_formats.ligand_receptor.keys():
+    try:
+        print(database, " : ", legacy.data_formats.ligand_receptor[database])
+        lst={database: legacy.data_formats.ligand_receptor[database]}
+        pw_legacy.init_network(lst)
+    except Exception as inst:
+        print("Error for "+database)
+
+for database in legacy.data_formats.tf_mirna.keys():
+    try:
+        print(database, " : ", legacy.data_formats.tf_mirna[database])
+        lst={database: legacy.data_formats.tf_mirna[database]}
+        pw_legacy.init_network(lst)
+    except Exception as inst:
+        print("Error for "+database)
+
+
 #it still requires lots of time so better save it
 
 #save the network
 
-pw_legacy.save_to_pickle('mylegacy2.pickle')
+pw_legacy.save_to_pickle('mylegacy.pickle')
 
 import sys
 sys.exit("END OF THE SCRIPT")

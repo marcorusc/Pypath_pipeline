@@ -17,6 +17,7 @@ dependencies:
   - pycurl
   - python-igraph
   - pip:
+    - pysftp
     - omnipath
     - pypath-omnipath
     
