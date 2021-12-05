@@ -39,8 +39,7 @@ pa.save_to_pickle(pickle_file='mynetwork.pickle')
 
 print('END OF THE DOWNLOAD/UPDATE OF THE NETWORK/n')
 
-import sys
-sys.exit("END OF THE SCRIPT")
+
 
 os.makedirs('tmpcache3')
 settings.setup(cachedir = 'tmpcache3') # ==> actual cache folder to use with legacy.main
@@ -67,3 +66,6 @@ for database in legacy.data_formats.omnipath.keys():
 #save the network
 
 pw_legacy.save_to_pickle('mylegacy2.pickle')
+
+import sys
+sys.exit("END OF THE SCRIPT")

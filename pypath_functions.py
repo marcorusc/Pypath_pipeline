@@ -249,7 +249,8 @@ def write_bnet_from_signor(graph, gene_dict):
         f.write("\n")
         f.write("targets, factors\n") # this is the standard label that I found in the biolqm github, is it ok? lo scopriremo solo vivendo
         for node in node_list:
-            formula = []
+            formula_ON = []
+            formula_OFF = []
             for element in df_signor["attrs"]:
                 if element.consensus_edges() != []:  # I don't know why, but some interactions are empty... so I am using this to skip the empty interactions
                     if element.consensus_edges()[0][1].label == node: # that's tricky one... when you write a bnet file (gene, formula) the gene is not the source, but the target! so I have to iterate between the targets
@@ -257,18 +258,26 @@ def write_bnet_from_signor(graph, gene_dict):
                         edge = element.consensus_edges() # storing the infos
                         if edge[0][2] == "directed" and edge[0][3] == "positive": # checking if the interaction is positive
                             source = edge[0][0].label # if it is, store the source of the positive interaction
-                            formula.append(source) # append the gene into the list
+                            formula_ON.append(source) # append the gene into the list
                         elif edge[0][2] == "directed" and edge[0][3] == "negative": # checking if the interaction is negative
                             source = edge[0][0].label # storing
-                            formula.append("!"+source) # append it to the formula with "!"
+                            formula_OFF.append(source) # append it to the formula with "!"
                         else:
                             print("undirected interaction") # this should never happen, ma non si sa mai...
             #print(formula)
-            if formula != []: # also this should never happen, but again, better be sure
+            if formula_ON != []: # also this should never happen, but again, better be sure
                 f.write(node + ",")
                 offset = 16 - len(node) # nice offset so the visualization is understandable
                 f.write(" " * offset)
-                f.write(" | ".join(formula)) # writinf everything in the file
-                f.write("\n")
+                f.write(" ( ")
+                f.write(" | ".join(formula_ON)) # writing the first parenthesis with all the positive interactions
+                f.write(" ) ")
+            if formula_ON != [] and formula_OFF != []:
+                f.write(" & ")
+            if formula_OFF != []:
+                f.write(" !( ")
+                f.write(" | ".join(formula_OFF))  # writing the first parenthesis with all the positive interactions
+                f.write(" ) ")
+            f.write("\n")
     f.close # good to go
     return
