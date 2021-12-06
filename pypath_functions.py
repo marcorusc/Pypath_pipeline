@@ -239,7 +239,7 @@ def write_bnet_from_signor(graph, gene_dict):
     node_list = []
     for element in df_signor["attrs"]:
         if element.consensus_edges() != []:
-            node_list.append(element.consensus_edges()[0][0].label) #I am storing into a list the labels (genesymbol) of the genes in "sources", I will use it later
+            #node_list.append(element.consensus_edges()[0][0].label) #I am storing into a list the labels (genesymbol) of the genes in "sources", I will use it later, non è vero alla fine era inutile e mi sballava pure il codice lol
             node_list.append(element.consensus_edges()[0][1].label) #I am storing into a list the labels (genesymbol) of the genes in "target", I will use it later
     node_list = list(dict.fromkeys(node_list)) # now I have collected in a list all the genes that I have found with directed interactions and without duplicates
     #print(node_list)
@@ -264,11 +264,10 @@ def write_bnet_from_signor(graph, gene_dict):
                             formula_OFF.append(source) # append it to the formula with "!"
                         else:
                             print("undirected interaction") # this should never happen, ma non si sa mai...
-            #print(formula)
-            if formula_ON != []: # also this should never happen, but again, better be sure
-                f.write(node + ",")
-                offset = 16 - len(node) # nice offset so the visualization is understandable
-                f.write(" " * offset)
+            f.write(node + ",")
+            offset = 16 - len(node)  # nice offset so the visualization is understandable
+            f.write(" " * offset)
+            if formula_ON != []: 
                 f.write(" ( ")
                 f.write(" | ".join(formula_ON)) # writing the first parenthesis with all the positive interactions
                 f.write(" ) ")
