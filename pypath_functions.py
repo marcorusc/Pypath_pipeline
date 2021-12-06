@@ -1,5 +1,6 @@
 from pypath.share import settings
 settings.setup(progressbars = True)
+from pypath.legacy import main as legacy
 import omnipath as op
 import pandas as pd
 import networkx as nx
@@ -8,6 +9,7 @@ from pypath.utils import mapping
 import igraph
 from IPython.display import Image
 import itertools
+import os
 
 def generate_dict(gene_list, pw_legacy):
     gene_dict = {}
@@ -40,6 +42,23 @@ def get_code_from_annotations(gene_list):
         dict_gene_code[genes_code.at[i, 'genesymbol']] = genes_code.at[i, 'uniprot']
 
     return dict_gene_code
+
+def load_network_from_cache(pw_legacy, cache_folder, databases):
+    settings.setup(cachedir=cache_folder)
+    for database in legacy.data_formats.omnipath.keys():
+        if database in databases:
+            print(database)
+            lst = {database: legacy.data_formats.omnipath[database]}
+            pw_legacy.init_network(lst)
+    return pw_legacy.graph
+
+def load_network_from_pickle(pw_legacy, pickle):
+    path_to_pickle = os.path.isfile(pickle)
+    if path_to_pickle == False:
+        print("Path error: No pickle file found")
+        return
+    pw_legacy.init_network(pickle_file=pickle)
+    return pw_legacy.graph
 
 #the function below returns an average between the possible interections
 #taken from the different databases
@@ -107,9 +126,11 @@ def complete_connection(graph, gene_dict, depth, pw_legacy):
                         node_2 = pw_legacy.vs.find(label=node2['label'])
                         for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL',
                                                               maxlen=depth):  # do not use graph index, for each graph the indexes are different
-                            # print(paths)
+                            #print(paths)
                             for i in range(1, len(paths) - 1):
-                                if pw_legacy.vs[paths[i]]['label'] in new_dict.keys():
+                                if pw_legacy.vs[paths[i]]['name'][:7] == "COMPLEX":
+                                    break
+                                elif pw_legacy.vs[paths[i]]['label'] in new_dict.keys():
                                     break
                                 else:
                                     # print(pw_legacy.vs[paths[i]]['label'], end=' ')
@@ -132,6 +153,8 @@ def get_complete_dict(graph, gene_dict, depth, pw_legacy):
             for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL', maxlen=depth): #do not use graph index, for each graph the indexes are different
                 #print(paths)
                 for i in range(1, len(paths)-1):
+                    if str(pw_legacy.vs[paths[i]]['name'])[:7] == "COMPLEX":
+                        break
                     if pw_legacy.vs[paths[i]]['label'] in complete_dict.keys():
                         break
                     else:
