@@ -287,9 +287,15 @@ def write_bnet_from_signor(graph, gene_dict):
                             formula_OFF.append(source) # append it to the formula with "!"
                         else:
                             print("undirected interaction") # this should never happen, ma non si sa mai...
+            formula = formula_ON + formula_OFF
+
             f.write(node + ",")
             offset = 16 - len(node)  # nice offset so the visualization is understandable
             f.write(" " * offset)
+            if formula == []:
+                f.write(" ( ")
+                f.write(node)
+                f.write(" ) ")
             if formula_ON != []: 
                 f.write(" ( ")
                 f.write(" | ".join(formula_ON)) # writing the first parenthesis with all the positive interactions
