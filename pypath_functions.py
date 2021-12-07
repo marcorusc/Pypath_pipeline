@@ -128,7 +128,7 @@ def complete_connection(graph, gene_dict, depth, pw_legacy):
                                                               maxlen=depth):  # do not use graph index, for each graph the indexes are different
                             #print(paths)
                             for i in range(1, len(paths) - 1):
-                                if pw_legacy.vs[paths[i]]['name'][:7] == "COMPLEX":
+                                if str(pw_legacy.vs[paths[i]]['name'])[:7] == "COMPLEX":
                                     break
                                 elif pw_legacy.vs[paths[i]]['label'] in new_dict.keys():
                                     break
