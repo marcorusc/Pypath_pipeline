@@ -11,14 +11,15 @@ from IPython.display import Image
 import itertools
 import os
 
-def generate_dict(gene_list, pw_legacy):
+
+def generate_dict(gene_list, graph):
     gene_dict = {}
     for gene in gene_list:
         name1= list(mapping.map_name(gene, 'genesymbol', 'uniprot'))[0]
         name2 = list(mapping.map_name(name1, 'uniprot', 'genesymbol'))[0]
         if len(name1) != 0:
             try:
-                pw_legacy.vs.find(name=name1)
+                graph.vs.find(name=name1)
                 gene_dict[name2] = name1
             except:
                 print(name1, " not present in the databases")
@@ -133,7 +134,7 @@ def complete_connection(graph, gene_dict, depth, pw_legacy):
                                 elif pw_legacy.vs[paths[i]]['label'] in new_dict.keys():
                                     break
                                 else:
-                                    # print(pw_legacy.vs[paths[i]]['label'], end=' ')
+                                    print(pw_legacy.vs[paths[i]]['label'], end=' ')
                                     new_dict[pw_legacy.vs[paths[i]]['label']] = \
                                     list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
 
@@ -158,7 +159,7 @@ def get_complete_dict(graph, gene_dict, depth, pw_legacy):
                     if pw_legacy.vs[paths[i]]['label'] in complete_dict.keys():
                         break
                     else:
-                        #print(pw_legacy.vs[paths[i]]['label'], end=' ')
+                        print(pw_legacy.vs[paths[i]]['label'], end=' ')
                         complete_dict[pw_legacy.vs[paths[i]]['label']] = list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
                     
                 #print('\n')  
@@ -256,14 +257,18 @@ def plot_with_colored_edges(graph): #need to add a legend
     return plot
 
 def write_bnet_from_signor(graph, gene_dict):
-    database = 'SIGNOR'  # ==> insert name of the database
+    database = ['SIGNOR', "Adhesome"]  # ==> insert name of the database
     edge_df = show_edge_dataframe(graph, gene_dict)
-    df_signor = edge_df[pd.DataFrame(edge_df.sources.tolist()).isin([database]).any(1).values] # I have filtered the dictionary to have directed interaction from signor
+    df_signor = edge_df[pd.DataFrame(edge_df.sources.tolist()).isin(database).any(1).values] # I have filtered the dictionary to have directed interaction from signor
     node_list = []
     for element in df_signor["attrs"]:
         if element.consensus_edges() != []:
-            #node_list.append(element.consensus_edges()[0][0].label) #I am storing into a list the labels (genesymbol) of the genes in "sources", I will use it later, non è vero alla fine era inutile e mi sballava pure il codice lol
+            node_list.append(element.consensus_edges()[0][0].label) #I am storing into a list the labels (genesymbol) of the genes in "sources", I will use it later
             node_list.append(element.consensus_edges()[0][1].label) #I am storing into a list the labels (genesymbol) of the genes in "target", I will use it later
+            try:
+                print("OTHER POSSIBLE INTERACTION: ", element.consensus_edges()[1])
+            except:
+                continue
     node_list = list(dict.fromkeys(node_list)) # now I have collected in a list all the genes that I have found with directed interactions and without duplicates
     #print(node_list)
     with open("formulae_Signor", "w") as f:
