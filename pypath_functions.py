@@ -22,7 +22,13 @@ def generate_dict(gene_list, graph):
                 graph.vs.find(name=name1)
                 gene_dict[name2] = name1
             except:
-                print(name1, " not present in the databases")
+                try:
+                    name2 = list(mapping.map_name(gene, 'uniprot', 'genesymbol'))[0]
+                    name1 = list(mapping.map_name(name2, 'genesymbol', 'uniprot'))[0]
+                    graph.vs.find(name=name1)
+                    gene_dict[name2] = name1
+                except:
+                    print(name1, " not present in the databases")
         else:
             print("Can't find genesymbol: ", name1, " try to look on genecards for other names")
 
@@ -114,31 +120,30 @@ def show_edge_dataframe(graph, gene_dict):
 
 #the following function is similar to complete_dict, but I am adding the interactions JUST for the node that are NOT already connected
 def complete_connection(graph, gene_dict, depth, pw_legacy):
-    new_dict = gene_dict.copy()
+    list_genes = list(gene_dict.keys())
     for node in graph.vs:
         if node.degree() == 0: #select the node with degree == 0
             for node2 in graph.vs:
                 if node2 == node: #loop again for all the other nodes but exclude the node already selected
                     continue
                 else:
-                    dist = graph.shortest_paths(gene_dict[node['label']], gene_dict[node2['label']], mode='all')
-                    if dist[0][0] > depth:
-                        node_1 = pw_legacy.vs.find(label=node['label'])
-                        node_2 = pw_legacy.vs.find(label=node2['label'])
-                        for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL',
+                    node_1 = pw_legacy.vs.find(label=node['label'])
+                    node_2 = pw_legacy.vs.find(label=node2['label'])
+                    for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL',
                                                               maxlen=depth):  # do not use graph index, for each graph the indexes are different
-                            #print(paths)
-                            for i in range(1, len(paths) - 1):
-                                if str(pw_legacy.vs[paths[i]]['name'])[:7] == "COMPLEX":
-                                    break
-                                elif pw_legacy.vs[paths[i]]['label'] in new_dict.keys():
-                                    break
-                                else:
-                                    print(pw_legacy.vs[paths[i]]['label'], end=' ')
-                                    new_dict[pw_legacy.vs[paths[i]]['label']] = \
-                                    list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
+                        #print(paths)
+                        for i in range(1, len(paths) - 1):
+                            if str(pw_legacy.vs[paths[i]]['name'])[:7] == "COMPLEX":
+                                break
+                            elif pw_legacy.vs[paths[i]]['label'] in list_genes:
+                                break
+                            else:
+                                #print(pw_legacy.vs[paths[i]]['label'], end=' ')
+                                list_genes.append(pw_legacy.vs[paths[i]]['label'])
+                                #new_dict[pw_legacy.vs[paths[i]]['label']] = \
+                                #list(mapping.map_name(pw_legacy.vs[paths[i]]['label'], 'genesymbol', 'uniprot'))[0]
 
-                            # print('\n')
+    new_dict = generate_dict(list_genes, pw_legacy)                    #print('\n')
     return new_dict
 
 def get_complete_dict(graph, gene_dict, depth, pw_legacy):
@@ -148,7 +153,7 @@ def get_complete_dict(graph, gene_dict, depth, pw_legacy):
         #path = graph.get_all_shortest_paths(gene_dict[node1['label']], gene_dict[node2['label']])
         dist = graph.shortest_paths(gene_dict[node1['label']], gene_dict[node2['label']], mode='all')
         #print(path)
-        if dist[0][0] > depth:
+        if dist[0][0] > depth: # if node disconnected, the distance is inf which should be > depth
             node_1 = pw_legacy.vs.find(label=node1['label'])
             node_2 = pw_legacy.vs.find(label=node2['label'])
             for paths in pw_legacy.find_all_paths(node_1.index, node_2.index, mode='ALL', maxlen=depth): #do not use graph index, for each graph the indexes are different
@@ -256,22 +261,22 @@ def plot_with_colored_edges(graph): #need to add a legend
     Image(filename='network_with_colored_edges.png')
     return plot
 
-def write_bnet_from_signor(graph, gene_dict):
-    database = ['SIGNOR', "Adhesome"]  # ==> insert name of the database
+def write_bnet_from_signor(graph, gene_dict, name="logic_formula.bnet"): # make this optional
+    #database = ['SIGNOR', "Adhesome"]  # ==> insert name of the database
     edge_df = show_edge_dataframe(graph, gene_dict)
-    df_signor = edge_df[pd.DataFrame(edge_df.sources.tolist()).isin(database).any(1).values] # I have filtered the dictionary to have directed interaction from signor
+    #df_signor = edge_df[pd.DataFrame(edge_df.sources.tolist()).isin(database).any(1).values] # I have filtered the dictionary to have directed interaction from signor
     node_list = []
-    for element in df_signor["attrs"]:
+    for element in edge_df["attrs"]:
         if element.consensus_edges() != []:
             node_list.append(element.consensus_edges()[0][0].label) #I am storing into a list the labels (genesymbol) of the genes in "sources", I will use it later
             node_list.append(element.consensus_edges()[0][1].label) #I am storing into a list the labels (genesymbol) of the genes in "target", I will use it later
             try:
-                print("OTHER POSSIBLE INTERACTION: ", element.consensus_edges()[1])
+                print("MULTIPLE POSSIBLE/ADVERSARY INTERACTIONS FOUND: ", element.consensus_edges()[0], " OR ", element.consensus_edges()[1])
             except:
                 continue
     node_list = list(dict.fromkeys(node_list)) # now I have collected in a list all the genes that I have found with directed interactions and without duplicates
     #print(node_list)
-    with open("formulae_Signor", "w") as f:
+    with open(name, "w") as f:
         f.write("# model in BoolNet format\n")
         f.write("# the header targets, factors is mandatory to be importable in the R package BoolNet\n")
         f.write("\n")
@@ -279,7 +284,7 @@ def write_bnet_from_signor(graph, gene_dict):
         for node in node_list:
             formula_ON = []
             formula_OFF = []
-            for element in df_signor["attrs"]:
+            for element in edge_df["attrs"]:
                 if element.consensus_edges() != []:  # I don't know why, but some interactions are empty... so I am using this to skip the empty interactions
                     if element.consensus_edges()[0][1].label == node: # that's tricky one... when you write a bnet file (gene, formula) the gene is not the source, but the target! so I have to iterate between the targets
                         #print(element.consensus_edges()[0][1].label, "  ", node ) # used to check
@@ -291,7 +296,8 @@ def write_bnet_from_signor(graph, gene_dict):
                             source = edge[0][0].label # storing
                             formula_OFF.append(source) # append it to the formula with "!"
                         else:
-                            print("undirected interaction") # this should never happen, ma non si sa mai...
+                            print("there is an undirected interaction that was dismissed") # this should never happen, ma non si sa mai...
+                            print(edge[0][0].label, "  ", edge[0][1].label)
             formula = formula_ON + formula_OFF
 
             f.write(node + ",")
