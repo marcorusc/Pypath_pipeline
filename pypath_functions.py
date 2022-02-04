@@ -406,5 +406,5 @@ def write_bnet_from_sif(sif_file, name="logic_formula.bnet"):
                 f.write(" | ".join(formula_OFF))  # writing the first parenthesis with all the positive interactions
                 f.write(" ) ")
                 f.write("\n")
-    f.close  # good to go
+     # good to go
     return
