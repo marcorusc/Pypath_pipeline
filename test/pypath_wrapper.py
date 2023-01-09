@@ -78,8 +78,9 @@ class Wrap_net(Network):
                             else:
                                 list_of_edges += a
                                 flag = False
+                else:
+                    continue
             # iterate for each node of the network and try to complete the connection, connecting all the disconnected component
-            # this can enlarge the network by a lot
             # according to the database selected as resource, this can return or not a fully connected network
             return list_of_edges
 
@@ -112,7 +113,11 @@ class Wrap_net(Network):
         for gene in self.get_entities():
             a = self.interaction_by_label(gene.label, node)
             if a:
-                list_of_neigh.append(a)
+                b = a.evidences.get_resources()
+                if b:
+                    list_of_neigh.append(a)
+            else:
+                continue
         return list_of_neigh
 
     def generate_graph(self):
@@ -146,7 +151,7 @@ class Wrap_net(Network):
         if self.interactions == {}:
             print("there are no interaction in this network, so makes no sense to print a bnet file!")
             return
-        with open("logic_formula.bnet", "w") as f:
+        with open(file_name, "w") as f:
             f.write("# model in BoolNet format\n")
             f.write("# the header targets, factors is mandatory to be importable in the R package BoolNet\n")
             f.write("\n")
