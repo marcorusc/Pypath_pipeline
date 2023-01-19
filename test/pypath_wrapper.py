@@ -35,16 +35,18 @@ class Wrap_net(Network):
             verified_genes.append(genesymbol[0])
 
         #to add a check if the node is in the database/node has a good name/ uniprot correspondance
-
+        @staticmethod
         def check_interaction(pth):
-            if pth.is_directed and pth.is_inhibition():
+            if pth is None:
+                return False
+            elif pth.is_directed and pth.is_inhibition():
                 return True
-            if pth.is_directed and pth.is_stimulation():
+            elif pth.is_directed and pth.is_stimulation():
                 return True
             else:
                 return False
 
-
+        @staticmethod
         def list_of_paths(nodes, i, res):
             list_of_edges = []
             for node1, node2 in combinations(nodes, 2):
@@ -58,19 +60,31 @@ class Wrap_net(Network):
                         break
             return list_of_edges
 
+        @staticmethod
         def check_connected(net):
             for x in net.nodes_by_label:
                 if not net.get_neighbours(x):
                     return False
             return True
 
+        @staticmethod
         def complete_connection(net, res):
             list_of_edges = []
             for y in net.nodes_by_label:
                 if not net.get_neighbours(y):
-                    i = 0
+                    direct_connections = []
+                    neighs = self.get_neighbours(y)
+                    for neigh in neighs:
+                        interaction_with_neigh = self.interaction(y, neigh)
+                        if check_interaction(interaction_with_neigh):
+                            direct_connections.append(neigh)
+                    if not direct_connections:
+                        print("The disconnected node has no directed connections with its neighbours, it is impossible to complete the connections")
+                        print(y)
+                        return
                     for x in (x for x in net.nodes_by_label if x != y):
                         flag = True
+                        i = 0
                         while flag:
                             a = self.find_paths(y, x, maxlen=i, loops=False, mode='ALL', resources=res)
                             if not a:
@@ -84,6 +98,7 @@ class Wrap_net(Network):
             # according to the database selected as resource, this can return or not a fully connected network
             return list_of_edges
 
+        @staticmethod
         def add_edges(b, net):
             for c in b:
                 i = 0
@@ -104,21 +119,19 @@ class Wrap_net(Network):
 
         if complete_connections and not check_connected(new_net):
             new_edges = complete_connection(new_net, resources)
-            add_edges(new_edges, new_net)
+            if new_edges:
+                add_edges(new_edges, new_net)
 
         return new_net
 
     def get_neighbours(self, node):
         list_of_neigh = []
-        for gene in self.get_entities():
-            a = self.interaction_by_label(gene.label, node)
-            if a:
-                b = a.evidences.get_resources()
-                if b:
-                    list_of_neigh.append(a)
-            else:
-                continue
-        return list_of_neigh
+        for i in self.get_interactions():
+            if node == i[0].label:
+                list_of_neigh.append(i[1].label)
+            if node == i[1].label:
+                list_of_neigh.append(i[0].label)
+        return list(set(list_of_neigh))
 
     def generate_graph(self):
         #to do: generate a graph so I can access information like vertex degree etc...
