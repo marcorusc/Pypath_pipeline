@@ -1,0 +1,11 @@
+name: pypath_env
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - jupyter
+  - python-igraph
+  - pycairo
+  - pip:
+    - pypath-omnipath==0.14.33
+prefix: /home/marco/anaconda3/envs/pypath_env
