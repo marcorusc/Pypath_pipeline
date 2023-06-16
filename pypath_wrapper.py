@@ -29,10 +29,16 @@ class Wrap_net(Network):
         verified_genes = []
 
         for node in list_of_nodes:
-            uniprot = list(mapping.map_name(node, 'genesymbol', 'uniprot'))
-            genesymbol = list(mapping.map_name(uniprot[0], 'uniprot', 'genesymbol'))
-            new_net.add_node(self.entity(genesymbol[0]))
-            verified_genes.append(genesymbol[0])
+            try:
+                uniprot = list(mapping.map_name(node, 'genesymbol', 'uniprot'))
+                genesymbol = list(mapping.map_name(uniprot[0], 'uniprot', 'genesymbol'))
+                if self.entity(genesymbol[0]) is None:
+                    print(genesymbol[0], " is not in any database currentely loaded.")
+                    continue
+                new_net.add_node(self.entity(genesymbol[0]))
+                verified_genes.append(genesymbol[0])
+            except:
+                print(node, " not found")
 
         #to add a check if the node is in the database/node has a good name/ uniprot correspondance
         @staticmethod
@@ -71,6 +77,7 @@ class Wrap_net(Network):
         def complete_connection(net, res):
             list_of_edges = []
             for y in net.nodes_by_label:
+                #first makes sure that the disconnected node can be connected with directed interactions
                 if not net.get_neighbours(y):
                     direct_connections = []
                     neighs = self.get_neighbours(y)
@@ -82,6 +89,7 @@ class Wrap_net(Network):
                         print("The disconnected node has no directed connections with its neighbours, it is impossible to complete the connections")
                         print(y)
                         return
+                    #next, lets look for the connection
                     for x in (x for x in net.nodes_by_label if x != y):
                         flag = True
                         i = 0
@@ -99,6 +107,45 @@ class Wrap_net(Network):
             return list_of_edges
 
         @staticmethod
+        def soft_connection(net, res):
+            # soft version of the complete connection
+            # starting from i=0, it iterates for each node in the network, trying to connect the disconnected component using find_path(i)
+            # if it finds a path, it adds the edge to the list of edges
+            # otherwise it moves to the next node in the network and call find_path(i)
+            # if it doesn't find any connection i++ and starts again from the first node
+            list_of_edges = []
+            for y in net.nodes_by_label:
+                # first makes sure that the disconnected node can be connected with directed interactions
+                if not net.get_neighbours(y):
+                    direct_connections = []
+                    neighs = self.get_neighbours(y)
+                    for neigh in neighs:
+                        interaction_with_neigh = self.interaction(y, neigh)
+                        if check_interaction(interaction_with_neigh):
+                            direct_connections.append(neigh)
+                    if not direct_connections:
+                        print(
+                            "The disconnected node has no directed connections with its neighbours, it is impossible to complete the connections")
+                        print(y)
+                        return
+                    # next, lets look for the connection
+                    i = 0
+                    flag = True
+                    while flag:
+                        for x in (x for x in net.nodes_by_label if x != y):
+                            a = self.find_paths(y, x, maxlen=i, loops=False, mode='ALL', resources=res)
+                            if not a:
+                                continue
+                            else:
+                                list_of_edges += a
+                                flag = False
+                        i += 1
+                else:
+                    continue
+
+            return list_of_edges
+
+        @staticmethod
         def add_edges(b, net):
             for c in b:
                 i = 0
@@ -111,14 +158,21 @@ class Wrap_net(Network):
                     else:
                         break
                 for ed in edge_list:
-                    net.add_interaction(ed)
+                    if net.interaction(ed.a, ed.b):
+                        continue
+                    else:
+                        net.add_interaction(ed) # to check if interaction already exist in the network object
             return
 
         paths = list_of_paths(verified_genes, max_len, resources)
         add_edges(paths, new_net)
 
-        if complete_connections and not check_connected(new_net):
+        if complete_connections == True and not check_connected(new_net):
             new_edges = complete_connection(new_net, resources)
+            if new_edges:
+                add_edges(new_edges, new_net)
+        elif complete_connections == "soft" and not check_connected(new_net):
+            new_edges = soft_connection(new_net, resources)
             if new_edges:
                 add_edges(new_edges, new_net)
 
@@ -223,4 +277,11 @@ class Wrap_net(Network):
                     f.write("\n")
         f.close  # good to go
         return
+
+    def generate_df(self):
+        # to add genesymbol instead of uniprot names
+        df = self.get_df()
+        for gene in df["id_a"]:
+            df = df.replace(gene, list(mapping.map_name(gene, 'uniprot', 'genesymbol'))[0])
+        return df
 
