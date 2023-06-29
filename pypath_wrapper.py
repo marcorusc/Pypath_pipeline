@@ -285,3 +285,41 @@ class Wrap_net(Network):
             df = df.replace(gene, list(mapping.map_name(gene, 'uniprot', 'genesymbol'))[0])
         return df
 
+    def generate_sif(self, file_name='output.sif.txt'):
+        if self.interactions == {}:
+            print("there are no interaction in this network, so makes no sense to print a bnet file!")
+            return
+        with open(file_name, "w") as f:
+            for node in list(self.nodes_by_label.keys()):
+                for element in self.interactions.values():
+                    interactions = element.which_signs()
+                    for interaction in interactions:  # iterate over the possible interactions
+                        if interaction:  # I don't know why, but some interactions are empty... so I am using this to skip the empty interactions
+                            if interaction[0][
+                                1].label == node:  # that's tricky one... when you write a bnet file (gene, formula) the gene is not the source, but the target! so I have to iterate between the targets
+                                # print(element.consensus_edges()[0][1].label, "  ", node ) # used to check
+                                if interaction[1] == "positive":  # checking if the interaction is positive
+                                    source = interaction[0][
+                                        0].label  # if it is, store the source of the positive interaction
+                                    to_write = source + "\t"
+                                    f.write(to_write)
+                                    f.write("1\t")
+                                    f.write(node)
+                                elif interaction[1] == "negative":  # checking if the interaction is negative
+                                    source = interaction[0][0].label  # storing
+                                    to_write = source + "\t"
+                                    f.write(to_write)
+                                    f.write("-1\t")
+                                    f.write(node)
+                                else:
+                                    print("there is an undirected interaction that was dismissed: ",
+                                          interaction[0][0].label,
+                                          " and ",
+                                          interaction[0][1].label)  # this should never happen, ma non si sa mai...
+                                f.write("\n")
+        f.close()
+        return
+
+
+
+
